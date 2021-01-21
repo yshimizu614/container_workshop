@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-mysql-without-pvc
+  namespace: sandbox
+  labels:
+    app: wordpress-without-pvc
+spec:
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  selector:
+    app: wordpress-without-pvc
+    tier: mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-mysql-without-pvc
+  namespace: sandbox
+  labels:
+    app: wordpress-without-pvc
+spec:
+  selector:
+    matchLabels:
+      app: wordpress-without-pvc
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress-without-pvc
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass
+              key: password
+        ports:
+        - containerPort: 3306
+          name: mysql

@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-mysql-with-pvc
+  namespace: sandbox
+  labels:
+    app: wordpress-with-pvc
+spec:
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  selector:
+    app: wordpress-with-pvc
+    tier: mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-mysql-with-pvc
+  namespace: sandbox
+  labels:
+    app: wordpress-with-pvc
+spec:
+  selector:
+    matchLabels:
+      app: wordpress-with-pvc
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress-with-pvc
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass
+              key: password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  namespace: sandbox
+  labels:
+    app: wordpress-with-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+　storageClassName: basic
